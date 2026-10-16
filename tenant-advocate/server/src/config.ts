@@ -27,6 +27,15 @@ const schema = z.object({
   ALLOWED_EMAILS: csv,
   ALLOWED_EMAIL_DOMAINS: csv,
 
+  // Model provider: 'bedrock' (Claude on Amazon Bedrock) or 'anthropic' (first-party API).
+  MODEL_PROVIDER: z.preprocess(blankToUndefined, z.enum(['bedrock', 'anthropic']).default('bedrock')),
+  AWS_REGION: optStr,
+  AWS_ACCESS_KEY_ID: optStr,
+  AWS_SECRET_ACCESS_KEY: optStr,
+  AWS_SESSION_TOKEN: optStr,
+  AWS_PROFILE: optStr,
+  AWS_BEARER_TOKEN_BEDROCK: optStr,
+  BEDROCK_MODEL_ID: strWithDefault('anthropic.claude-sonnet-5-5'),
   ANTHROPIC_API_KEY: optStr,
   ANTHROPIC_MODEL: strWithDefault('claude-sonnet-5-5'),
 
@@ -69,11 +78,10 @@ export function assertServerEnv(): void {
   }
 }
 
-/** Which integrations have credentials configured. Booleans only; never returns secrets. */
+/** Which integrations have credentials configured (model status is added in app.ts). Booleans only; never secrets. */
 export function serviceStatus() {
   return {
     googleSignIn: Boolean(env.GOOGLE_CLIENT_ID && env.SESSION_SECRET),
-    model: Boolean(env.ANTHROPIC_API_KEY),
     arize: Boolean(env.ARIZE_SPACE_ID && env.ARIZE_API_KEY),
     daytona: Boolean(env.DAYTONA_API_KEY),
     agentMemory: Boolean(env.AGENT_MEMORY_ENDPOINT && env.AGENT_MEMORY_CONTEXT && env.AGENT_MEMORY_API_KEY),

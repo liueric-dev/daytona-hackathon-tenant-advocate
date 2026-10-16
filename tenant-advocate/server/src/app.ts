@@ -9,6 +9,7 @@ import { authRouter } from './auth/routes.js';
 import { isProd, rootDir, serviceStatus } from './config.js';
 import { HttpError } from './errors.js';
 import { logger } from './logger.js';
+import { llmConfigured } from './services/llm.js';
 
 export function createApp() {
   const app = express();
@@ -43,7 +44,7 @@ export function createApp() {
   });
   app.use('/auth', authRouter);
   app.get('/api/status', requireAuth, (_req, res) => {
-    res.json({ services: serviceStatus() });
+    res.json({ services: { ...serviceStatus(), model: llmConfigured() } });
   });
 
   // In production the server also serves the built web app (single deployable).

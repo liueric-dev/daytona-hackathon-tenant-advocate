@@ -7,10 +7,9 @@
  * Each check reports pass / fail / skip (skip = credentials not set). Exit code is 1 if any
  * check fails, so this can gate a deploy. Run it from a machine with normal internet access.
  */
-import Anthropic from '@anthropic-ai/sdk';
 import { DiagLogLevel, diag } from '@opentelemetry/api';
 import { env } from '../src/config.js';
-import { getAnthropic, MODEL } from '../src/services/anthropic.js';
+import { createLlm, getLlm, llmConfigured, llmMissingMessage, MODEL } from '../src/services/llm.js';
 import { getDaytona } from '../src/services/daytona.js';
 import {
   COMPLAINT_FIELDS,
@@ -72,8 +71,8 @@ const checks: Record<string, () => Promise<Outcome>> = {
   },
 
   async model() {
-    if (!env.ANTHROPIC_API_KEY) return { status: 'skip', detail: 'ANTHROPIC_API_KEY not set' };
-    const msg = await getAnthropic().messages.create({
+    if (!llmConfigured()) return { status: 'skip', detail: llmMissingMessage() };
+    const msg = await getLlm().messages.create({
       model: MODEL,
       max_tokens: 20,
       messages: [{ role: 'user', content: 'Reply with exactly one word: ready' }],
@@ -81,13 +80,13 @@ const checks: Record<string, () => Promise<Outcome>> = {
     const text = msg.content.map((b) => (b.type === 'text' ? b.text : '')).join('').trim();
     return {
       status: 'pass',
-      detail: `${MODEL} replied "${short(text, 60)}" (${msg.usage.input_tokens} in / ${msg.usage.output_tokens} out)`,
+      detail: `${env.MODEL_PROVIDER}:${MODEL} replied "${short(text, 60)}" (${msg.usage.input_tokens} in / ${msg.usage.output_tokens} out)`,
     };
   },
 
   async arize() {
     if (!env.ARIZE_SPACE_ID || !env.ARIZE_API_KEY) return { status: 'skip', detail: 'ARIZE_SPACE_ID / ARIZE_API_KEY not set' };
-    if (!env.ANTHROPIC_API_KEY) return { status: 'skip', detail: 'needs ANTHROPIC_API_KEY to generate a trace' };
+    if (!llmConfigured()) return { status: 'skip', detail: `needs model credentials to generate a trace (${llmMissingMessage()})` };
 
     // 1) Do the credentials get rejected? An empty OTLP export request is harmless.
     const probe = await fetch(ARIZE_OTLP_URL, {
@@ -111,7 +110,7 @@ const checks: Record<string, () => Promise<Outcome>> = {
       DiagLogLevel.ERROR,
     );
     initTracing();
-    const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY }); // created AFTER initTracing
+    const client = createLlm(); // created AFTER initTracing
     await traced('smoke.chain', 'CHAIN', { 'input.value': 'smoke test' }, async () => {
       await client.messages.create({
         model: MODEL,

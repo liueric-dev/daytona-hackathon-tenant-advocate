@@ -9,7 +9,7 @@ This repo is the foundation: auth, configuration, tracing, and a client plus smo
 ```
 server/   Node + TypeScript + Express API
   src/auth/        Google sign-in, signed session cookie, CSRF origin check
-  src/services/    tracing (Arize), anthropic, daytona, memory (SurrealDB), hpd (NYC Open Data)
+  src/services/    tracing (Arize), llm (Bedrock or Anthropic), daytona, memory (SurrealDB), hpd (NYC Open Data)
   scripts/smoke.ts connectivity checks for each service
 web/      React + Vite client
 ```
@@ -25,7 +25,7 @@ web/      React + Vite client
    - Put the client ID in `GOOGLE_CLIENT_ID`. No client secret is needed for this flow.
    - `SESSION_SECRET`: `openssl rand -base64 48`.
 4. **Other services** (each is optional until you use it; `npm run smoke` shows what's missing):
-   - `ANTHROPIC_API_KEY`: model access.
+   - Model (default Claude on Amazon Bedrock): `AWS_REGION` plus AWS credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_SESSION_TOKEN`, or `AWS_PROFILE`, or `AWS_BEARER_TOKEN_BEDROCK`), and a `BEDROCK_MODEL_ID` your account can access. To use the first-party API instead, set `MODEL_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
    - `ARIZE_SPACE_ID`, `ARIZE_API_KEY`: Arize AX > Space Settings.
    - `DAYTONA_API_KEY`: Daytona dashboard.
    - `AGENT_MEMORY_*`: SurrealDB Studio > Agent Memory > deploy a context, then create an API key (`sp-...`). `AGENT_MEMORY_ENDPOINT` is the context host URL.
@@ -54,6 +54,7 @@ The browser gets a Google ID token, posts it to `POST /auth/google`, and the ser
 
 ## Known caveats
 
+- Bedrock uses the Messages API endpoint (`@anthropic-ai/bedrock-sdk`, `AnthropicBedrockMantle`). Per Anthropic's docs it does not support structured outputs, URL file sources, or the Files API, so send documents as text and parse JSON from normal responses. Arize tracing of these calls was verified against a local stand-in server, not real Bedrock.
 - `@surrealdb/memory` (the official SDK) is alpha, so `services/memory.ts` calls the documented REST API directly.
 - `npm audit` reports a `braces` advisory pulled in by `@daytona/sdk`; no fix is published yet.
 - Tenant data is sensitive: `data/cache/` and `data/uploads/` are git-ignored; use fake data for demos.

@@ -11,6 +11,7 @@
     "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.35.0",
     "@anthropic-ai/sdk": "^0.135.0",
     "@arizeai/openinference-instrumentation-anthropic": "^0.2.11",
     "@arizeai/openinference-semantic-conventions": "^2.14.0",
