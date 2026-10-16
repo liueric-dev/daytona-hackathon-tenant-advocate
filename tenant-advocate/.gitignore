@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# local data caches (cached HPD snapshots, uploaded leases) - never commit tenant data
+data/cache/
+data/uploads/
+
+.DS_Store
+*.log
