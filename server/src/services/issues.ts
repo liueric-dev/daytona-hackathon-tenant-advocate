@@ -109,7 +109,6 @@ export function addIssue(userSub: string, input: NewIssueInput): Promise<Issue> 
     };
     store[userSub] = [...(store[userSub] ?? []), issue];
     await writeStore(store);
-    mirrorToMemory(issue);
     return issue;
   });
 }

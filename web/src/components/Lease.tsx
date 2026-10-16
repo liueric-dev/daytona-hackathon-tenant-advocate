@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api';
 
 interface Term { value: string | number | null; quote?: string; page?: number; verified?: boolean }
-interface Flag { issue: string; quote: string; page: number; why: string; verified?: boolean }
+interface Flag { issue: string; quote: string; page: number; why: string; checkWith?: string | null; verified?: boolean }
 interface LeaseData {
   terms: Record<string, unknown> & { fees?: Term[]; otherNotableClauses?: Term[]; redFlags?: Flag[] };
   uploadedAt: string;
@@ -121,13 +121,14 @@ export function Lease() {
         <>
           {!!terms.redFlags?.length && (
             <div className="flags">
-              <h3>Red flags</h3>
+              <h3>Worth checking</h3>
               {terms.redFlags.map((f, i) => (
                 <div key={i} className="flag">
                   <strong>{f.issue}</strong> <span className="muted small">p. {f.page}</span>{' '}
                   {f.verified && <span className="ok">✓</span>}
                   <div className="quote">“{f.quote}”</div>
                   <div>{f.why}</div>
+                  {f.checkWith && <div className="muted small">Confirm with: {f.checkWith}</div>}
                 </div>
               ))}
             </div>

@@ -14,6 +14,7 @@ export interface RedFlag {
   quote: string | null;
   page: number | null;
   why: string;
+  checkWith?: string | null;
   verified?: boolean;
 }
 const TERM_KEYS = [
@@ -92,10 +93,14 @@ Schema:
  "monthlyRent": T, "securityDeposit": T, "leaseStart": T, "leaseEnd": T,
  "fees": [T], "renewal": T, "repairsAndMaintenance": T, "subletting": T,
  "earlyTermination": T, "heatAndHotWater": T, "otherNotableClauses": [T],
- "redFlags": [{"issue": string, "quote": string|null, "page": number|null, "why": string}]
+ "redFlags": [{"issue": string, "quote": string|null, "page": number|null, "why": string, "checkWith": string|null}]
 }
 where T = {"value": string|null, "quote": string|null, "page": number|null}.
-Rules: "quote" must be a short verbatim excerpt copied exactly from the lease. Never invent or paraphrase quotes. If a term is absent use {"value":null,"quote":null,"page":null}. redFlags are clauses that look unusual, unfair, or possibly unlawful for a tenant (explain why briefly).`;
+Rules: "quote" must be a short verbatim excerpt copied exactly from the lease. Never invent or paraphrase quotes. If a term is absent use {"value":null,"quote":null,"page":null}. Every "value" must restate what the lease says, without commentary or opinion.
+redFlags are clauses that look unusual or worth a second look for a tenant. "why" is one plain-English sentence explaining why the clause is unusual or worth a second look. "why" must NEVER say a clause is legal, illegal, unlawful, unenforceable, or that it violates any law or doctrine, and must never name statutes. "checkWith" is a short string naming who can confirm, chosen from exactly: "HPD", "311", "Housing Court Answers", "NY Attorney General tenant guide", "a tenant lawyer".`;
+
+/** Safeguard: a legal conclusion must never reach the UI. */
+const LEGAL_CONCLUSION = /\b(unlawful|illegal|unenforceable|violat\w*|against the law)\b/i;
 
 function stripFences(s: string): string {
   const t = s.trim();
@@ -145,11 +150,13 @@ export function extractLeaseTerms(leaseText: string): Promise<LeaseTerms> {
     terms.otherNotableClauses = list(raw.otherNotableClauses).map((x) => verify(asTerm(x)));
     terms.redFlags = list(raw.redFlags).map((x): RedFlag => {
       const o = (x && typeof x === 'object' ? x : {}) as Record<string, unknown>;
+      const why = String(o.why ?? '');
       return verify({
         issue: String(o.issue ?? ''),
         quote: typeof o.quote === 'string' && o.quote.trim() ? o.quote : null,
         page: typeof o.page === 'number' ? o.page : null,
-        why: String(o.why ?? ''),
+        why: LEGAL_CONCLUSION.test(why) ? 'Unusual for a residential lease; worth confirming.' : why,
+        checkWith: typeof o.checkWith === 'string' && o.checkWith.trim() ? o.checkWith.trim() : null,
       });
     });
     return terms as unknown as LeaseTerms;

@@ -25,6 +25,8 @@ const TOOL_LABELS: Record<string, string> = {
   list_issues: 'read issue log',
   get_issues: 'read issue log',
   draft_letter: 'drafted a letter',
+  recall_history: 'recalled your history (SurrealDB)',
+  remember_context: 'saved to memory (SurrealDB)',
   draft_message: 'drafted a letter',
 };
 const toolLabel = (n: string) => TOOL_LABELS[n] ?? n.replace(/_/g, ' ');

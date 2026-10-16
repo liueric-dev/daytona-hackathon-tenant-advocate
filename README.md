@@ -2,7 +2,48 @@
 
 An AI tenant advocate for NYC renters: it reads your lease, checks your building's public HPD record, keeps a dated log of problems, and answers with a source for every claim. Information only, not legal advice.
 
-This repo is the foundation: auth, configuration, tracing, and a client plus smoke test for every external service. Product features (lease extraction, building check, issue log, orchestrator) build on top of it.
+Built at the Daytona HackSprint NYC (Oct 2026).
+
+## Features
+
+- **Building check:** an address is turned into a building ID by NYC Planning Labs GeoSearch; open HPD violations (by class, rent-impairing) and complaints from the last 12 months are pulled from NYC Open Data, each with its record ID as a citation.
+- **Lease review:** an uploaded PDF is parsed inside a throwaway **Daytona** sandbox, then Claude extracts the key terms and the clauses "worth checking". Every quote is verified word-for-word against the lease text; unverifiable quotes are dropped.
+- **Issue log:** dated problems with their landlord-notification status.
+- **Advocate agent:** Claude (Amazon Bedrock) runs a bounded tool-use loop over read-only tools: building record, lease terms and search, issue log, vetted NYC rules, memory recall and save, and a draft-only letter tool.
+- **Letters with an approval gate:** drafts are saved as `pending_approval`. The app never sends anything or contacts the landlord.
+- **Memory:** **SurrealDB Agent Memory** stores context the tenant shares (e.g. "management only answers texts") and recalls it by meaning later. Structured records stay in the datastore.
+- **Observability:** every run is traced to **Arize AX** (agent → tools → model calls), with a citation-check evaluator span on every answer.
+
+## Safeguards
+
+- Read-only tools; nothing leaves the app without the user approving it.
+- Every claim carries a citation; the answer says what it couldn't verify.
+- Law is stated only from vetted rules with an official source (currently NYC heat and hot water); everything else is "worth checking", with who to confirm it with.
+- Untrusted input (PDFs, lease text, tool output) is isolated and treated as data, not instructions.
+- Google sign-in, signed HttpOnly session cookie, CSRF origin check, per-user data, rate-limited agent endpoint.
+
+## Architecture
+
+```
+React dashboard (web/src/v2) ──> Express API (server/)
+                                   ├─ /api/building ─> GeoSearch + NYC Open Data (HPD)
+                                   ├─ /api/lease    ─> Daytona sandbox ─> Claude (Bedrock)
+                                   ├─ /api/issues   ─> local JSON store (data/uploads)
+                                   └─ /api/agent    ─> tool loop ─> Claude, tools above, SurrealDB memory
+                                   all spans ─> Arize AX
+```
+
+## Demo
+
+`docs/demo/` has a **fictional** sample lease (PDF + text) and the 3-minute pitch. Suggested address: 454 West 146 Street, Manhattan.
+
+## Deploy
+
+The server serves the built web app, so it is a single Node service: `npm run build && NODE_ENV=production WEB_ORIGIN=https://your.host npm start`. Production requires an `https://` `WEB_ORIGIN`, and that origin must be added to the Google OAuth client's Authorized JavaScript origins. For a quick public URL from a laptop: `cloudflared tunnel --url http://localhost:3001`.
+
+## Limitations
+
+The lease store and drafts are in memory (reset on restart); the issue log is a JSON file; vetted rules cover heat and hot water only. Information only, not legal advice.
 
 ## Layout
 

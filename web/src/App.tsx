@@ -2,23 +2,26 @@ import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { AuthProvider, useAuth } from './auth';
-import { Advocate } from './components/Advocate';
-import { BuildingCard } from './components/BuildingCard';
-import { IssueLog } from './components/IssueLog';
-import { Lease } from './components/Lease';
+import { Workspace } from './v2/Workspace';
 
 function SignIn() {
   const { signIn } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <main className="card narrow">
-      <h1>Tenant Advocate</h1>
-      <p className="muted">
-        Read your lease, check your building&rsquo;s public record, and keep a dated log of problems, with a source
-        for every answer.
-      </p>
-      <div className="signin">
+    <main className="signin-page">
+      <div className="signin-sheet">
+        <h1>Tenant Advocate</h1>
+        <span className="signin-tag">for New York City renters</span>
+        <p className="signin-lede">
+          No heat, a leak, a fee you didn&rsquo;t expect, a clause that looks wrong. Get a clear answer with a source for
+          every claim.
+        </p>
+        <ul className="signin-list">
+          <li>Checks your building&rsquo;s HPD violations and complaints</li>
+          <li>Reads your lease and quotes it, page by page</li>
+          <li>Keeps a dated log of problems and drafts letters for your approval</li>
+        </ul>
         <GoogleLogin
           onSuccess={(r) => {
             setError(null);
@@ -27,54 +30,19 @@ function SignIn() {
           }}
           onError={() => setError('Google sign-in failed. Try again.')}
         />
+        {error && (
+          <p role="alert" className="inline-error">
+            {error}
+          </p>
+        )}
+        <p className="signin-fine">Information only, not legal advice · This app never contacts your landlord.</p>
       </div>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
-      <p className="fineprint">Information only, not legal advice.</p>
     </main>
   );
 }
 
 function Home() {
-  const { user, signOut } = useAuth();
-  const [address, setAddress] = useState(() => {
-    try {
-      return localStorage.getItem('ta.address') ?? '';
-    } catch {
-      return '';
-    }
-  });
-
-  return (
-    <>
-      <header className="bar">
-        <strong>Tenant Advocate</strong>
-        <span className="who">
-          {user?.picture && <img src={user.picture} alt="" width={28} height={28} referrerPolicy="no-referrer" />}
-          <span>{user?.name ?? user?.email}</span>
-          <button className="link" onClick={() => void signOut()}>
-            Sign out
-          </button>
-        </span>
-      </header>
-      <div className="page">
-        <BuildingCard onAddress={setAddress} />
-        <div className="grid">
-          <div className="col side">
-            <Lease />
-            <IssueLog />
-          </div>
-          <div className="col main">
-            <Advocate address={address} />
-          </div>
-        </div>
-        <footer className="foot">Information only, not legal advice. Read-only: this app never contacts your landlord.</footer>
-      </div>
-    </>
-  );
+  return <Workspace />;
 }
 
 function Gate() {
