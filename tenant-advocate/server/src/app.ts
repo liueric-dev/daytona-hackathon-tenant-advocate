@@ -10,6 +10,10 @@ import { isProd, rootDir, serviceStatus } from './config.js';
 import { HttpError } from './errors.js';
 import { logger } from './logger.js';
 import { llmConfigured } from './services/llm.js';
+import { agentRouter } from './routes/agent.js';
+import { buildingRouter } from './routes/building.js';
+import { issuesRouter } from './routes/issues.js';
+import { leaseRouter } from './routes/lease.js';
 
 export function createApp() {
   const app = express();
@@ -43,6 +47,10 @@ export function createApp() {
     res.json({ ok: true, uptimeSeconds: Math.round(process.uptime()) });
   });
   app.use('/auth', authRouter);
+  app.use('/api/building', buildingRouter);
+  app.use('/api/issues', issuesRouter);
+  app.use('/api/lease', leaseRouter);
+  app.use('/api/agent', agentRouter);
   app.get('/api/status', requireAuth, (_req, res) => {
     res.json({ services: { ...serviceStatus(), model: llmConfigured() } });
   });

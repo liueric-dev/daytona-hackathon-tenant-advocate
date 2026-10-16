@@ -2,17 +2,10 @@ import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { AuthProvider, useAuth } from './auth';
-
-type Services = Record<string, boolean>;
-
-const SERVICE_LABELS: Record<string, string> = {
-  googleSignIn: 'Google sign-in',
-  model: 'Claude model',
-  arize: 'Arize tracing',
-  daytona: 'Daytona sandbox',
-  agentMemory: 'SurrealDB Agent Memory',
-  nycOpenData: 'NYC Open Data',
-};
+import { Advocate } from './components/Advocate';
+import { BuildingCard } from './components/BuildingCard';
+import { IssueLog } from './components/IssueLog';
+import { Lease } from './components/Lease';
 
 function SignIn() {
   const { signIn } = useAuth();
@@ -47,14 +40,13 @@ function SignIn() {
 
 function Home() {
   const { user, signOut } = useAuth();
-  const [services, setServices] = useState<Services | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api<{ services: Services }>('/api/status')
-      .then((r) => setServices(r.services))
-      .catch((e: Error) => setError(e.message));
-  }, []);
+  const [address, setAddress] = useState(() => {
+    try {
+      return localStorage.getItem('ta.address') ?? '';
+    } catch {
+      return '';
+    }
+  });
 
   return (
     <>
@@ -68,21 +60,19 @@ function Home() {
           </button>
         </span>
       </header>
-      <main className="card">
-        <h2>Setup status</h2>
-        <p className="muted">Which integrations have credentials configured on the server.</p>
-        {error && <p role="alert" className="error">{error}</p>}
-        {services && (
-          <ul className="status">
-            {Object.entries(services).map(([key, ok]) => (
-              <li key={key} className={ok ? 'ok' : 'missing'}>
-                <span aria-hidden>{ok ? '●' : '○'}</span> {SERVICE_LABELS[key] ?? key}
-                <span className="state">{ok ? 'configured' : 'not set'}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </main>
+      <div className="page">
+        <BuildingCard onAddress={setAddress} />
+        <div className="grid">
+          <div className="col side">
+            <Lease />
+            <IssueLog />
+          </div>
+          <div className="col main">
+            <Advocate address={address} />
+          </div>
+        </div>
+        <footer className="foot">Information only, not legal advice. Read-only: this app never contacts your landlord.</footer>
+      </div>
     </>
   );
 }
